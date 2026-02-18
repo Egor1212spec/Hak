@@ -1,0 +1,43 @@
+services:
+  frontend:
+    build:
+      context: ./frontend      
+      dockerfile: Dockerfile
+    container_name: frontend_app
+    restart: unless-stopped
+    ports:
+      - "80:80"                
+    depends_on:
+      - transfusion
+    networks:
+      - app-network
+
+  transfusion:
+    build:
+      context: ./backend       
+      dockerfile: Dockerfile
+    container_name: transfusion
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+    volumes: 
+      - ./cert.pem:/app/cert.pem:ro
+      - ./key.pem:/app/key.pem:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OPEN3D_CPU_RENDERING=true
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
